@@ -2,11 +2,24 @@
   "name": "@yanchespenda/react-siema",
   "version": "1.0.4",
   "description": "A carousel for react",
+  "keywords": [
+    "slider",
+    "gallery",
+    "carousel",
+    "siema",
+    "react",
+    "react-siema",
+    "react carousel",
+    "react slider",
+    "react gallery",
+    "react siema",
+    "google carousel"
+  ],
   "author": "Alfian Rikzandi <denydirgantara94@gmail.com>",
   "license": "MIT",
-  "main": "./lib/cjs/index.js",
-  "module": "./lib/esm/index.js",
-  "types": "./lib/esm/index.d.ts",
+  "main": "./lib/cjs/ReactSiema.js",
+  "module": "./lib/esm/ReactSiema.js",
+  "types": "./lib/esm/ReactSiema.d.ts",
   "homepage": "https://github.com/yanchespenda/react-siema",
   "files": [
     "/lib"
