@@ -1,13 +1,13 @@
 {
-  "name": "react-siema",
+  "name": "@yanchespenda/react-siema",
   "version": "1.0.0",
   "description": "A carousel for react",
   "author": "Alfian Rikzandi <denydirgantara94@gmail.com>",
   "license": "MIT",
-  "private": false,
   "main": "./lib/cjs/index.js",
   "module": "./lib/esm/index.js",
   "types": "./lib/esm/index.d.ts",
+  "homepage": "https://github.com/yanchespenda/react-siema",
   "files": [
     "/lib"
   ],
@@ -26,5 +26,9 @@
   "peerDependencies": {
     "react": "^16.8.0",
     "react-dom": "^16.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yanchespenda/react-siema.git"
   }
 }
