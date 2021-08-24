@@ -1,18 +1,19 @@
-const DebounceUtils = (func: Function, wait: number, immediate: boolean = false) => {
-  let timeout: ReturnType<typeof setTimeout>
-  return function () {
-    //@ts-ignore
+const DebounceUtils = (func: VoidFunction, wait: number, immediate = false): VoidFunction => {
+  let timeout: ReturnType<typeof setTimeout>;
+  return function (): void {
     const context = this,
-        args = arguments
+      args = arguments;
     const later = () => {
-      timeout = setTimeout(() => {})
-      if (!immediate) func.apply(context, args)
-    }
-    const callNow = immediate && !timeout
-    clearTimeout(timeout)
-    timeout = setTimeout(later, wait)
-    if (callNow) func.apply(context, args)
-  }
-}
+      timeout = setTimeout(() => {
+        // do nothing.
+      });
+      if (!immediate) func.apply(context, args);
+    };
+    const callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+    if (callNow) func.apply(context, args);
+  };
+};
 
-export default DebounceUtils
+export default DebounceUtils;
