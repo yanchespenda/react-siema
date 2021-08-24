@@ -1,7 +1,7 @@
 import React from 'react'
 import CarouselStyle from './App.module.scss'
 
-import ReactSiema from '../../src/ReactSiema'
+import ReactSiema from '@yanchespenda/react-siema'
 import { CarouselItem, CarouselLinkData } from './App.interface'
 
 function App() {
