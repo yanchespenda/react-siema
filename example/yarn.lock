@@ -1926,9 +1926,10 @@
   version "4.2.2"
   resolved "https://registry.yarnpkg.com/@xtuc/long/-/long-4.2.2.tgz#d291c6a4e97989b5c61d9acf396ae4fe133a718d"
 
-"@yanchespenda/react-siema@link:..":
-  version "0.0.0"
-  uid ""
+"@yanchespenda/react-siema@^1.0.5":
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/@yanchespenda/react-siema/-/react-siema-1.0.5.tgz#e11cee43482694a4b926444b1feb25fcd02a83f6"
+  integrity sha512-lbTKaU3ANB2sKtPwcmNgSGUL26idKH1Uhx42eqxnVneeOk2q6p1rGhZA3ld173D7BgvvqykfJq22hPGLpYanZQ==
 
 abab@^2.0.3:
   version "2.0.5"
