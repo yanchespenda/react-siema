@@ -27,7 +27,7 @@ function App() {
     goTo: (_index: number) => {}
   })
 
-  const data: CarouselItem[] = []
+  const data: CarouselItem[] = [{"carousel_title":"Corousel 2","carousel_desc_data":{"enable":true,"desc":"0W0"},"carousel_link_data":{"enable":true,"target":"_self","link":"https://web.facebook.com","text":"Test"},"carousel_image":{"enable":true,"file_exits":false,"img":"https://myponyasia.s3.us-west-1.wasabisys.com/assets/images/carousel/720/2021/08/9764e8df-c43b-4128-95ca-3eaac26f36eb.webp"}},{"carousel_title":"Testing","carousel_desc_data":{"enable":true,"desc":"Lorem ipsum, dolor sit amet consectetur adipisicing elit. Dolores, enim? Assumenda, omnis beatae architecto at delectus facilis? Perspiciatis, in perferendis."},"carousel_link_data":{"enable":true,"target":"_self","link":"https://www.youtube.com/","text":"https://web.facebook.com/"},"carousel_image":{"enable":true,"file_exits":false,"img":"https://myponyasia.s3.us-west-1.wasabisys.com/assets/images/carousel/720/2021/07/1527820a-2a16-4a1b-9287-69a39d0efde4.webp"}}]
 
   const getUrl = (url: string) => {
     return 'url(' + url + ')' 

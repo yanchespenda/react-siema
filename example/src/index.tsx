@@ -1,12 +1,18 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './App';
+import App from './Template/GoogleEdu/App';
 import reportWebVitals from './reportWebVitals';
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <React.Fragment>
+      <div className="block-info">
+        <h1 className="title">Google Edu Carousel Like:</h1> <br />
+        <a className="source" href="https://github.com/yanchespenda/react-siema/tree/main/example/src/Template/GoogleEdu">Source github</a><br />
+      </div>
+      <App />
+    </React.Fragment>
   </React.StrictMode>,
   document.getElementById('root')
 );

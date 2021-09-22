@@ -18,11 +18,7 @@
   position: relative;
 }
 
-// .carouselItems {}
-
 @media (min-width: 600px) {
-  // .carouselContainer {}
-
   .carouselPreContainer {
     padding: 0 32px;
   }
@@ -38,8 +34,6 @@
     padding-left: 0;
     padding-right: 0;
   }
-
-  // .carouselItems {}
 
   .carouselItems,
   .carouselItem {
@@ -104,10 +98,6 @@
   background-color: #212121;
   color: #fff;
 }
-
-// @media (min-width: 600px) {
-//     .carouselContainerBox {}
-// }
 
 @media (min-width: 1024px) {
   .carouselContainerBox {
@@ -198,8 +188,6 @@
   -o-transition: all .2s ease-in;
   transition: all .2s ease-in;
 }
-
-// .carouselContainerBoxBtnlink:hover {}
 
 @media (min-width: 1024px) {
   .carouselContainerBoxBtnlink {
@@ -369,12 +357,6 @@
   }
 }
 
-
-
-
-
-
-
 .carouselNavigationBlockLiTriggerWrap {
   height: 2px;
   overflow: hidden;
@@ -384,8 +366,7 @@
 }
 
 .carouselNavigationBlockLiTriggerWrapBar {
-  // background: rgb(255, 64, 129);
-  background-color: rgba(29, 78, 216, var(--tw-bg-opacity));
+  background: rgb(255, 64, 129);
   height: 100%;
   left: 0;
   position: absolute;
