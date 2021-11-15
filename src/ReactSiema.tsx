@@ -20,6 +20,10 @@ interface ConfigProps extends Partial<Selector> {
   threshold: number;
   loop: boolean;
   timer: number;
+  disabledTimer: boolean;
+  useFixedWidth: boolean;
+  fixedWidth: string;
+  skipSliderMoveAfterTouchEnd: boolean;
   onNext: (currentSlide: number) => void;
   onPrev: (currentSlide: number) => void;
   onGoTo: (currentSlide: number) => void;
@@ -56,6 +60,7 @@ class ReactSiema extends Component<IProps> {
   perPage: number;
   selectorWidth: number;
   innerElements: HTMLElement[];
+  isFilled: boolean;
 
   constructor(props: IProps) {
     super(props);
@@ -71,6 +76,10 @@ class ReactSiema extends Component<IProps> {
         threshold: 20,
         loop: false,
         timer: 10000,
+        disabledTimer: false,
+        useFixedWidth: false,
+        fixedWidth: '0',
+        skipSliderMoveAfterTouchEnd: false,
 
         onNext: () => {
           // do nothing.
@@ -107,6 +116,7 @@ class ReactSiema extends Component<IProps> {
     this.perPage = 0;
     this.selectorWidth = 0;
     this.innerElements = [];
+    this.isFilled = false;
   }
 
   get selectorRef(): React.MutableRefObject<HTMLDivElement> {
@@ -157,22 +167,44 @@ class ReactSiema extends Component<IProps> {
     this.setSelectorWidth();
     this.setInnerElements();
     this.resolveSlidesNumber();
+    this.checkFilled();
 
     this.setStyle(this.sliderFrame, {
-      width: `${(this.selectorWidth / this.perPage) * this.innerElements.length}px`,
+      width: `${this.initialFrameWidth()}px`,
       webkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
       transition: `all ${this.config.duration}ms ${this.config.easing}`,
     });
 
     for (let i = 0; i < this.innerElements.length; i++) {
-      this.setStyleChildren(this.innerElements[i], {
-        width: `${100 / this.innerElements.length}%`,
-      });
+      if (this.config.useFixedWidth) {
+        this.setStyleChildren(this.innerElements[i], {
+          width: `${this.config.fixedWidth}`,
+        });
+      } else {
+        this.setStyleChildren(this.innerElements[i], {
+          width: `${100 / this.innerElements.length}%`,
+        });
+      }
     }
 
     this.slideToCurrent();
 
-    this.timer = setInterval(() => this.runTimer(), this.config.timer);
+    if (!this.config.disabledTimer) {
+      this.timer = setInterval(() => this.runTimer(), this.config.timer);
+    }
+  }
+
+  checkFilled(): void {
+    this.isFilled = false;
+    if (this.config.useFixedWidth) {
+      if (Number(this.config.fixedWidth.replace('px', '')) * this.innerElements.length > this.selectorWidth) {
+        this.isFilled = true;
+      }
+    } else {
+      if ((this.selectorWidth / this.perPage) * this.innerElements.length > this.selectorWidth) {
+        this.isFilled = true;
+      }
+    }
   }
 
   setSelectorWidth(): void {
@@ -182,6 +214,22 @@ class ReactSiema extends Component<IProps> {
   setInnerElements(): void {
     if (this.sliderFrame)
       this.innerElements = Array.from(this.sliderFrameRef.current.children as HTMLCollectionOf<HTMLElement>);
+  }
+
+  initialFrameWidth(): number {
+    if (this.config.useFixedWidth) {
+      return Number(this.config.fixedWidth.replace('px', '')) * this.innerElements.length;
+    }
+    return this.resolveWidth() * this.innerElements.length;
+  }
+
+  resolveWidth(): number {
+    if (this.config.useFixedWidth) {
+      if (Number(this.config.fixedWidth.replace('px', '')) * this.innerElements.length < this.selectorWidth) {
+        return Number(this.config.fixedWidth.replace('px', '')) * this.innerElements.length;
+      }
+    }
+    return this.selectorWidth / this.perPage;
   }
 
   resolveSlidesNumber(): void {
@@ -227,9 +275,19 @@ class ReactSiema extends Component<IProps> {
   }
 
   slideToCurrent(): void {
-    this.sliderFrameRef.current.style[transformProperty] = `translate3d(-${
-      this.currentSlide * (this.selectorWidth / this.perPage)
-    }px, 0, 0)`;
+    this.sliderFrameRef.current.style[transformProperty] = `translate3d(-${this.resolveTransformProperty()}px, 0, 0)`;
+  }
+
+  resolveTransformProperty(): number {
+    let preCalculate = this.currentSlide * this.resolveWidth();
+    if (this.config.useFixedWidth) {
+      preCalculate = this.currentSlide * Number(this.config.fixedWidth.replace('px', ''));
+      if (this.isFilled && this.initialFrameWidth() - preCalculate < this.selectorWidth) {
+        this.prev();
+        preCalculate = this.initialFrameWidth() - this.selectorWidth;
+      }
+    }
+    return preCalculate;
   }
 
   updateAfterDrag(): void {
@@ -242,12 +300,30 @@ class ReactSiema extends Component<IProps> {
     this.slideToCurrent();
   }
 
+  updateMovement(): void {
+    // const movement = this.drag.end - this.drag.start;
+    // if (!this.config.useFixedWidth) {
+    //   if (movement > 0 && Math.abs(movement) > this.config.threshold) {
+    //     this.prev();
+    //   } else if (movement < 0 && Math.abs(movement) > this.config.threshold) {
+    //     this.next();
+    //   }
+    // } else {
+    //   if (movement > 0 && Math.abs(movement) > (this.config.threshold + Number(this.config.fixedWidth.replace('px', '')))) {
+    //     this.prev();
+    //   } else if (movement < 0 && Math.abs(movement) > (this.config.threshold + Number(this.config.fixedWidth.replace('px', '')))) {
+    //     this.next();
+    //   }
+    // }
+  }
+
   resize(): void {
     this.resolveSlidesNumber();
+    this.setSelectorWidth();
+    this.checkFilled();
 
-    this.selectorWidth = this.selectorRef.current.getBoundingClientRect().width;
     this.setStyle(this.sliderFrame, {
-      width: `${(this.selectorWidth / this.perPage) * this.innerElements.length}px`,
+      width: `${this.initialFrameWidth()}px`,
     });
   }
 
@@ -271,87 +347,117 @@ class ReactSiema extends Component<IProps> {
     });
   }
 
+  resolveDragCalculate(): number {
+    if (this.drag.start > 0) {
+      // to right
+      return this.drag.end > 0 ? this.drag.start - this.drag.end : 0;
+    }
+    // to left
+    return this.drag.start > 0 ? this.drag.end - this.drag.start : 0;
+  }
+
   onTouchStart(e: TouchEvent): void {
     e.stopPropagation();
-    this.pointerDown = true;
-    this.drag.start = e.touches[0].pageX;
+    if (this.config.draggable) {
+      this.pointerDown = true;
+      this.drag.start = e.touches[0].pageX;
+    }
   }
 
   onTouchEnd(e: TouchEvent): void {
     e.stopPropagation();
-    this.pointerDown = false;
-    this.setStyle(this.sliderFrame, {
-      webkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
-      transition: `all ${this.config.duration}ms ${this.config.easing}`,
-    });
-    if (this.drag.end) {
+    if (this.config.draggable) {
+      this.pointerDown = false;
+      this.setStyle(this.sliderFrame, {
+        webkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
+        transition: `all ${this.config.duration}ms ${this.config.easing}`,
+      });
+      // if (this.drag.end) {
+      //   this.updateAfterDrag();
+      // }
       this.updateAfterDrag();
+      this.clearDrag();
     }
-    this.clearDrag();
   }
 
   onTouchMove(e: TouchEvent): void {
     e.stopPropagation();
-    if (this.pointerDown) {
+    if (this.config.draggable) {
       this.drag.end = e.touches[0].pageX;
+      if (this.pointerDown) {
+        // this.drag.end = e.touches[0].pageX;
 
-      this.setStyle(this.sliderFrame, {
-        webkitTransition: `all 0ms ${this.config.easing}`,
-        transition: `all 0ms ${this.config.easing}`,
-        [transformProperty]: `translate3d(${
-          (this.currentSlide * (this.selectorWidth / this.perPage) + (this.drag.start - this.drag.end)) * -1
-        }px, 0, 0)`,
-      });
+        this.setStyle(this.sliderFrame, {
+          webkitTransition: `all 0ms ${this.config.easing}`,
+          transition: `all 0ms ${this.config.easing}`,
+          [transformProperty]: `translate3d(${
+            (this.resolveTransformProperty() + this.resolveDragCalculate()) * -1
+          }px, 0, 0)`,
+        });
+        this.updateMovement();
+      }
     }
   }
 
   onMouseDown(e: MouseEvent): void {
     e.preventDefault();
     e.stopPropagation();
-    this.pointerDown = true;
-    this.drag.start = e.pageX;
+    if (this.config.draggable) {
+      this.pointerDown = true;
+      this.drag.start = e.pageX;
+    }
   }
 
   onMouseUp(e: MouseEvent): void {
     e.stopPropagation();
-    this.pointerDown = false;
-    this.setStyle(this.sliderFrame, {
-      cursor: '-webkit-grab',
-      webkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
-      transition: `all ${this.config.duration}ms ${this.config.easing}`,
-    });
-    if (this.drag.end) {
-      this.updateAfterDrag();
-    }
-    this.clearDrag();
-  }
-
-  onMouseMove(e: MouseEvent): void {
-    e.preventDefault();
-    if (this.pointerDown) {
-      this.drag.end = e.pageX;
-      this.setStyle(this.sliderFrame, {
-        cursor: '-webkit-grabbing',
-        webkitTransition: `all 0ms ${this.config.easing}`,
-        transition: `all 0ms ${this.config.easing}`,
-        [transformProperty]: `translate3d(${
-          (this.currentSlide * (this.selectorWidth / this.perPage) + (this.drag.start - this.drag.end)) * -1
-        }px, 0, 0)`,
-      });
-    }
-  }
-
-  onMouseLeave(e: MouseEvent): void {
-    if (this.pointerDown) {
+    if (this.config.draggable) {
       this.pointerDown = false;
-      this.drag.end = e.pageX;
       this.setStyle(this.sliderFrame, {
         cursor: '-webkit-grab',
         webkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
         transition: `all ${this.config.duration}ms ${this.config.easing}`,
       });
+      // if (this.drag.end) {
+      //   this.updateAfterDrag();
+      // }
       this.updateAfterDrag();
       this.clearDrag();
+    }
+  }
+
+  onMouseMove(e: MouseEvent): void {
+    e.preventDefault();
+    if (this.config.draggable) {
+      this.drag.end = e.pageX;
+      if (this.pointerDown) {
+        // this.drag.end = e.pageX;
+        this.setStyle(this.sliderFrame, {
+          cursor: '-webkit-grabbing',
+          webkitTransition: `all 0ms ${this.config.easing}`,
+          transition: `all 0ms ${this.config.easing}`,
+          [transformProperty]: `translate3d(${
+            (this.resolveTransformProperty() + this.resolveDragCalculate()) * -1
+          }px, 0, 0)`,
+        });
+        this.updateMovement();
+      }
+    }
+  }
+
+  onMouseLeave(e: MouseEvent): void {
+    if (this.config.draggable) {
+      this.drag.end = e.pageX;
+      if (this.pointerDown) {
+        this.pointerDown = false;
+        // this.drag.end = e.pageX;
+        this.setStyle(this.sliderFrame, {
+          cursor: '-webkit-grab',
+          webkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
+          transition: `all ${this.config.duration}ms ${this.config.easing}`,
+        });
+        this.updateAfterDrag();
+        this.clearDrag();
+      }
     }
   }
 
