@@ -23,10 +23,10 @@ interface ConfigProps extends Partial<Selector> {
   disabledTimer: boolean;
   useFixedWidth: boolean;
   fixedWidth: string;
-  skipSliderMoveAfterTouchEnd: boolean;
   onNext: (currentSlide: number) => void;
   onPrev: (currentSlide: number) => void;
   onGoTo: (currentSlide: number) => void;
+  onNavigationChanged: (enable: boolean) => void;
 }
 
 interface IProps extends Partial<ConfigProps> {
@@ -60,7 +60,7 @@ class ReactSiema extends Component<IProps> {
   perPage: number;
   selectorWidth: number;
   innerElements: HTMLElement[];
-  isFilled: boolean;
+  useNavigation: boolean;
 
   constructor(props: IProps) {
     super(props);
@@ -79,7 +79,6 @@ class ReactSiema extends Component<IProps> {
         disabledTimer: false,
         useFixedWidth: false,
         fixedWidth: '0',
-        skipSliderMoveAfterTouchEnd: false,
 
         onNext: () => {
           // do nothing.
@@ -88,6 +87,9 @@ class ReactSiema extends Component<IProps> {
           // do nothing.
         },
         onGoTo: () => {
+          // do nothing.
+        },
+        onNavigationChanged: () => {
           // do nothing.
         },
       },
@@ -116,7 +118,7 @@ class ReactSiema extends Component<IProps> {
     this.perPage = 0;
     this.selectorWidth = 0;
     this.innerElements = [];
-    this.isFilled = false;
+    this.useNavigation = false;
   }
 
   get selectorRef(): React.MutableRefObject<HTMLDivElement> {
@@ -167,7 +169,7 @@ class ReactSiema extends Component<IProps> {
     this.setSelectorWidth();
     this.setInnerElements();
     this.resolveSlidesNumber();
-    this.checkFilled();
+    this.checkNavigation();
 
     this.setStyle(this.sliderFrame, {
       width: `${this.initialFrameWidth()}px`,
@@ -194,17 +196,18 @@ class ReactSiema extends Component<IProps> {
     }
   }
 
-  checkFilled(): void {
-    this.isFilled = false;
+  checkNavigation(): void {
+    this.useNavigation = false;
     if (this.config.useFixedWidth) {
       if (Number(this.config.fixedWidth.replace('px', '')) * this.innerElements.length > this.selectorWidth) {
-        this.isFilled = true;
+        this.useNavigation = true;
       }
     } else {
       if ((this.selectorWidth / this.perPage) * this.innerElements.length > this.selectorWidth) {
-        this.isFilled = true;
+        this.useNavigation = true;
       }
     }
+    if (this.config.onNavigationChanged) this.config.onNavigationChanged(this.useNavigation);
   }
 
   setSelectorWidth(): void {
@@ -282,7 +285,7 @@ class ReactSiema extends Component<IProps> {
     let preCalculate = this.currentSlide * this.resolveWidth();
     if (this.config.useFixedWidth) {
       preCalculate = this.currentSlide * Number(this.config.fixedWidth.replace('px', ''));
-      if (this.isFilled && this.initialFrameWidth() - preCalculate < this.selectorWidth) {
+      if (this.useNavigation && this.initialFrameWidth() - preCalculate < this.selectorWidth) {
         this.prev();
         preCalculate = this.initialFrameWidth() - this.selectorWidth;
       }
@@ -320,7 +323,7 @@ class ReactSiema extends Component<IProps> {
   resize(): void {
     this.resolveSlidesNumber();
     this.setSelectorWidth();
-    this.checkFilled();
+    this.checkNavigation();
 
     this.setStyle(this.sliderFrame, {
       width: `${this.initialFrameWidth()}px`,
