@@ -3,14 +3,14 @@ import debounce from './utils/debounce';
 import transformProperty from './utils/transformProperty';
 
 interface Selector {
-  selector: React.Ref<HTMLDivElement>;
+  selector: React.RefObject<HTMLDivElement | null>;
 }
 
-type PerPage = { [k: number]: number };
+type PerPage = Record<number, number>;
 
-type Style = { [k: string]: string };
+type Style = Record<string, string>;
 
-interface ConfigProps extends Partial<Selector> {
+interface ConfigProps extends Selector {
   resizeDebounce: number;
   duration: number;
   easing: string;
@@ -29,7 +29,7 @@ interface ConfigProps extends Partial<Selector> {
   onNavigationChanged: (enable: boolean) => void;
 }
 
-interface IProps extends Partial<ConfigProps> {
+interface IProps extends Partial<Omit<ConfigProps, 'selector'>> {
   children: React.ReactNode;
 }
 
@@ -38,100 +38,66 @@ interface PropDrag {
   end: number;
 }
 
-class ReactSiema extends Component<IProps> {
-  events: string[] = [
-    'onTouchStart',
-    'onTouchEnd',
-    'onTouchMove',
-    'onMouseDown',
-    'onMouseUp',
-    'onMouseLeave',
-    'onMouseMove',
-  ];
+const DEFAULT_CONFIG: Omit<ConfigProps, 'selector'> = {
+  resizeDebounce: 250,
+  duration: 200,
+  easing: 'ease-out',
+  perPage: 1,
+  startIndex: 0,
+  draggable: true,
+  threshold: 20,
+  loop: false,
+  timer: 10000,
+  disabledTimer: false,
+  useFixedWidth: false,
+  fixedWidth: '0',
+  onNext: () => {
+    // do nothing.
+  },
+  onPrev: () => {
+    // do nothing.
+  },
+  onGoTo: () => {
+    // do nothing.
+  },
+  onNavigationChanged: () => {
+    // do nothing.
+  },
+};
 
-  timer: ReturnType<typeof setInterval> | null;
-  config: ConfigProps;
-  selector: React.Ref<HTMLDivElement>;
-  sliderFrame: React.Ref<HTMLDivElement>;
-  currentSlide: number;
-  onResize: (this: Window, ev: UIEvent) => void;
-  pointerDown: boolean;
-  drag: PropDrag;
-  perPage: number;
-  selectorWidth: number;
-  innerElements: HTMLElement[];
-  useNavigation: boolean;
+class ReactSiema extends Component<IProps> {
+  timer: ReturnType<typeof setInterval> | null = null;
+  selector = React.createRef<HTMLDivElement>();
+  sliderFrame = React.createRef<HTMLDivElement>();
+  currentSlide = 0;
+  onResize: () => void = () => {
+    // do nothing.
+  };
+  pointerDown = false;
+  drag: PropDrag = {
+    start: 0,
+    end: 0,
+  };
+  perPage = 0;
+  selectorWidth = 0;
+  innerElements: HTMLElement[] = [];
+  useNavigation = false;
 
   constructor(props: IProps) {
     super(props);
-    this.config = Object.assign(
-      {},
-      {
-        resizeDebounce: 250,
-        duration: 200,
-        easing: 'ease-out',
-        perPage: 1,
-        startIndex: 0,
-        draggable: true,
-        threshold: 20,
-        loop: false,
-        timer: 10000,
-        disabledTimer: false,
-        useFixedWidth: false,
-        fixedWidth: '0',
-
-        onNext: () => {
-          // do nothing.
-        },
-        onPrev: () => {
-          // do nothing.
-        },
-        onGoTo: () => {
-          // do nothing.
-        },
-        onNavigationChanged: () => {
-          // do nothing.
-        },
-      },
-      props,
-    );
-
-    this.events.forEach((handler) => {
-      this[handler] = this[handler].bind(this);
-    });
-
-    this.currentSlide = 0;
-    this.timer = null;
-
-    this.selector = React.createRef();
-    this.sliderFrame = React.createRef();
-
-    this.onResize = () => {
-      // do nothing.
-    };
-
-    this.pointerDown = false;
-    this.drag = {
-      start: 0,
-      end: 0,
-    };
-    this.perPage = 0;
-    this.selectorWidth = 0;
-    this.innerElements = [];
-    this.useNavigation = false;
   }
 
-  get selectorRef(): React.MutableRefObject<HTMLDivElement> {
-    return this.selector as React.MutableRefObject<HTMLDivElement>;
-  }
-
-  get sliderFrameRef(): React.MutableRefObject<HTMLDivElement> {
-    return this.sliderFrame as React.MutableRefObject<HTMLDivElement>;
+  get config(): ConfigProps {
+    const props = this.props as Partial<Omit<ConfigProps, 'selector'>>;
+    return {
+      ...DEFAULT_CONFIG,
+      ...props,
+      selector: this.selector,
+    };
   }
 
   componentDidMount(): void {
-    this.config.selector = this.selector;
-    this.currentSlide = this.config.startIndex || 0;
+    this.currentSlide = this.config.startIndex;
 
     this.init();
 
@@ -173,7 +139,7 @@ class ReactSiema extends Component<IProps> {
 
     this.setStyle(this.sliderFrame, {
       width: `${this.initialFrameWidth()}px`,
-      webkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
+      WebkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
       transition: `all ${this.config.duration}ms ${this.config.easing}`,
     });
 
@@ -197,41 +163,63 @@ class ReactSiema extends Component<IProps> {
   }
 
   checkNavigation(): void {
-    this.useNavigation = false;
+    const fixedWidth = this.getFixedWidth();
+
     if (this.config.useFixedWidth) {
-      if (Number(this.config.fixedWidth.replace('px', '')) * this.innerElements.length > this.selectorWidth) {
-        this.useNavigation = true;
-      }
+      this.useNavigation = fixedWidth * this.innerElements.length > this.selectorWidth;
     } else {
-      if ((this.selectorWidth / this.perPage) * this.innerElements.length > this.selectorWidth) {
-        this.useNavigation = true;
-      }
+      this.useNavigation =
+        this.perPage > 0 && (this.selectorWidth / this.perPage) * this.innerElements.length > this.selectorWidth;
     }
-    if (this.config.onNavigationChanged) this.config.onNavigationChanged(this.useNavigation);
+
+    this.config.onNavigationChanged(this.useNavigation);
   }
 
   setSelectorWidth(): void {
-    if (this.selector) this.selectorWidth = this.selectorRef.current.getBoundingClientRect().width;
+    const selectorElement = this.selector.current;
+    if (selectorElement) {
+      this.selectorWidth = selectorElement.getBoundingClientRect().width;
+    }
   }
 
   setInnerElements(): void {
-    if (this.sliderFrame)
-      this.innerElements = Array.from(this.sliderFrameRef.current.children as HTMLCollectionOf<HTMLElement>);
+    const sliderFrameElement = this.sliderFrame.current;
+
+    if (!sliderFrameElement) {
+      this.innerElements = [];
+      return;
+    }
+
+    this.innerElements = Array.from(sliderFrameElement.children as HTMLCollectionOf<HTMLElement>);
+  }
+
+  getFixedWidth(): number {
+    return Number(this.config.fixedWidth.replace('px', '')) || 0;
   }
 
   initialFrameWidth(): number {
     if (this.config.useFixedWidth) {
-      return Number(this.config.fixedWidth.replace('px', '')) * this.innerElements.length;
+      return this.getFixedWidth() * this.innerElements.length;
     }
+
     return this.resolveWidth() * this.innerElements.length;
   }
 
   resolveWidth(): number {
     if (this.config.useFixedWidth) {
-      if (Number(this.config.fixedWidth.replace('px', '')) * this.innerElements.length < this.selectorWidth) {
-        return Number(this.config.fixedWidth.replace('px', '')) * this.innerElements.length;
+      const fixedWidth = this.getFixedWidth();
+
+      if (fixedWidth * this.innerElements.length < this.selectorWidth) {
+        return fixedWidth * this.innerElements.length;
       }
+
+      return fixedWidth;
     }
+
+    if (this.perPage === 0) {
+      return this.selectorWidth;
+    }
+
     return this.selectorWidth / this.perPage;
   }
 
@@ -240,17 +228,23 @@ class ReactSiema extends Component<IProps> {
       this.perPage = this.config.perPage;
     } else if (typeof this.config.perPage === 'object') {
       this.perPage = 1;
-      for (const viewport in this.config.perPage) {
-        if (window.innerWidth > Number(viewport)) {
-          this.perPage = this.config.perPage[viewport];
+      const breakpoints = Object.entries(this.config.perPage)
+        .map(([viewport, perPage]) => [Number(viewport), perPage] as const)
+        .sort((a, b) => a[0] - b[0]);
+
+      for (const [viewport, perPage] of breakpoints) {
+        if (window.innerWidth > viewport) {
+          this.perPage = perPage;
         }
       }
     }
   }
 
   prev(): void {
+    const maxSlide = Math.max(this.innerElements.length - this.perPage, 0);
+
     if (this.currentSlide === 0 && this.config.loop) {
-      this.currentSlide = this.innerElements.length - this.perPage;
+      this.currentSlide = maxSlide;
     } else {
       this.currentSlide = Math.max(this.currentSlide - 1, 0);
     }
@@ -260,10 +254,12 @@ class ReactSiema extends Component<IProps> {
   }
 
   next(): void {
-    if (this.currentSlide === this.innerElements.length - this.perPage && this.config.loop) {
+    const maxSlide = Math.max(this.innerElements.length - this.perPage, 0);
+
+    if (this.currentSlide === maxSlide && this.config.loop) {
       this.currentSlide = 0;
     } else {
-      this.currentSlide = Math.min(this.currentSlide + 1, this.innerElements.length - this.perPage);
+      this.currentSlide = Math.min(this.currentSlide + 1, maxSlide);
     }
     this.slideToCurrent();
 
@@ -271,20 +267,29 @@ class ReactSiema extends Component<IProps> {
   }
 
   goTo(index: number): void {
-    this.currentSlide = Math.min(Math.max(index, 0), this.innerElements.length - 1);
+    const maxSlide = Math.max(this.innerElements.length - 1, 0);
+
+    this.currentSlide = Math.min(Math.max(index, 0), maxSlide);
     this.slideToCurrent();
 
     if (this.config.onGoTo) this.config.onGoTo(this.currentSlide);
   }
 
   slideToCurrent(): void {
-    this.sliderFrameRef.current.style[transformProperty] = `translate3d(-${this.resolveTransformProperty()}px, 0, 0)`;
+    const sliderFrameElement = this.sliderFrame.current;
+
+    if (!sliderFrameElement) {
+      return;
+    }
+
+    const sliderStyle = sliderFrameElement.style as unknown as Record<string, string>;
+    sliderStyle[transformProperty] = `translate3d(-${this.resolveTransformProperty()}px, 0, 0)`;
   }
 
   resolveTransformProperty(): number {
     let preCalculate = this.currentSlide * this.resolveWidth();
     if (this.config.useFixedWidth) {
-      preCalculate = this.currentSlide * Number(this.config.fixedWidth.replace('px', ''));
+      preCalculate = this.currentSlide * this.getFixedWidth();
       if (this.useNavigation && this.initialFrameWidth() - preCalculate < this.selectorWidth) {
         this.prev();
         preCalculate = this.initialFrameWidth() - this.selectorWidth;
@@ -301,23 +306,6 @@ class ReactSiema extends Component<IProps> {
       this.next();
     }
     this.slideToCurrent();
-  }
-
-  updateMovement(): void {
-    // const movement = this.drag.end - this.drag.start;
-    // if (!this.config.useFixedWidth) {
-    //   if (movement > 0 && Math.abs(movement) > this.config.threshold) {
-    //     this.prev();
-    //   } else if (movement < 0 && Math.abs(movement) > this.config.threshold) {
-    //     this.next();
-    //   }
-    // } else {
-    //   if (movement > 0 && Math.abs(movement) > (this.config.threshold + Number(this.config.fixedWidth.replace('px', '')))) {
-    //     this.prev();
-    //   } else if (movement < 0 && Math.abs(movement) > (this.config.threshold + Number(this.config.fixedWidth.replace('px', '')))) {
-    //     this.next();
-    //   }
-    // }
   }
 
   resize(): void {
@@ -337,147 +325,152 @@ class ReactSiema extends Component<IProps> {
     };
   }
 
-  setStyle(target: React.Ref<HTMLDivElement>, styles: Style): void {
-    const domTarget = (target as React.MutableRefObject<HTMLDivElement>).current;
+  setStyle(target: React.RefObject<HTMLDivElement | null>, styles: Style): void {
+    const domTarget = target.current;
+
+    if (!domTarget) {
+      return;
+    }
+
     Object.keys(styles).forEach((attribute) => {
-      domTarget.style[attribute] = styles[attribute];
+      (domTarget.style as unknown as Record<string, string>)[attribute] = styles[attribute];
     });
   }
 
   setStyleChildren(target: HTMLElement, styles: Style): void {
     Object.keys(styles).forEach((attribute) => {
-      target.style[attribute] = styles[attribute];
+      (target.style as unknown as Record<string, string>)[attribute] = styles[attribute];
     });
   }
 
   resolveDragCalculate(): number {
-    if (this.drag.start > 0) {
-      // to right
-      return this.drag.end > 0 ? this.drag.start - this.drag.end : 0;
+    if (this.drag.start <= 0 || this.drag.end <= 0) {
+      return 0;
     }
-    // to left
-    return this.drag.start > 0 ? this.drag.end - this.drag.start : 0;
+
+    return this.drag.start - this.drag.end;
   }
 
-  onTouchStart(e: TouchEvent): void {
+  onTouchStart = (e: React.TouchEvent<HTMLDivElement>): void => {
     e.stopPropagation();
     if (this.config.draggable) {
       this.pointerDown = true;
       this.drag.start = e.touches[0].pageX;
     }
-  }
+  };
 
-  onTouchEnd(e: TouchEvent): void {
+  onTouchEnd = (e: React.TouchEvent<HTMLDivElement>): void => {
     e.stopPropagation();
     if (this.config.draggable) {
       this.pointerDown = false;
       this.setStyle(this.sliderFrame, {
-        webkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
+        WebkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
         transition: `all ${this.config.duration}ms ${this.config.easing}`,
       });
-      // if (this.drag.end) {
-      //   this.updateAfterDrag();
-      // }
       this.updateAfterDrag();
       this.clearDrag();
     }
-  }
+  };
 
-  onTouchMove(e: TouchEvent): void {
+  onTouchMove = (e: React.TouchEvent<HTMLDivElement>): void => {
     e.stopPropagation();
     if (this.config.draggable) {
       this.drag.end = e.touches[0].pageX;
       if (this.pointerDown) {
-        // this.drag.end = e.touches[0].pageX;
-
         this.setStyle(this.sliderFrame, {
-          webkitTransition: `all 0ms ${this.config.easing}`,
+          WebkitTransition: `all 0ms ${this.config.easing}`,
           transition: `all 0ms ${this.config.easing}`,
           [transformProperty]: `translate3d(${
             (this.resolveTransformProperty() + this.resolveDragCalculate()) * -1
           }px, 0, 0)`,
         });
-        this.updateMovement();
       }
     }
-  }
+  };
 
-  onMouseDown(e: MouseEvent): void {
+  onMouseDown = (e: React.MouseEvent<HTMLDivElement>): void => {
     e.preventDefault();
     e.stopPropagation();
     if (this.config.draggable) {
       this.pointerDown = true;
       this.drag.start = e.pageX;
     }
-  }
+  };
 
-  onMouseUp(e: MouseEvent): void {
+  onMouseUp = (e: React.MouseEvent<HTMLDivElement>): void => {
     e.stopPropagation();
     if (this.config.draggable) {
       this.pointerDown = false;
       this.setStyle(this.sliderFrame, {
         cursor: '-webkit-grab',
-        webkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
+        WebkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
         transition: `all ${this.config.duration}ms ${this.config.easing}`,
       });
-      // if (this.drag.end) {
-      //   this.updateAfterDrag();
-      // }
       this.updateAfterDrag();
       this.clearDrag();
     }
-  }
+  };
 
-  onMouseMove(e: MouseEvent): void {
+  onMouseMove = (e: React.MouseEvent<HTMLDivElement>): void => {
     e.preventDefault();
     if (this.config.draggable) {
       this.drag.end = e.pageX;
       if (this.pointerDown) {
-        // this.drag.end = e.pageX;
         this.setStyle(this.sliderFrame, {
           cursor: '-webkit-grabbing',
-          webkitTransition: `all 0ms ${this.config.easing}`,
+          WebkitTransition: `all 0ms ${this.config.easing}`,
           transition: `all 0ms ${this.config.easing}`,
           [transformProperty]: `translate3d(${
             (this.resolveTransformProperty() + this.resolveDragCalculate()) * -1
           }px, 0, 0)`,
         });
-        this.updateMovement();
       }
     }
-  }
+  };
 
-  onMouseLeave(e: MouseEvent): void {
+  onMouseLeave = (e: React.MouseEvent<HTMLDivElement>): void => {
     if (this.config.draggable) {
       this.drag.end = e.pageX;
       if (this.pointerDown) {
         this.pointerDown = false;
-        // this.drag.end = e.pageX;
         this.setStyle(this.sliderFrame, {
           cursor: '-webkit-grab',
-          webkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
+          WebkitTransition: `all ${this.config.duration}ms ${this.config.easing}`,
           transition: `all ${this.config.duration}ms ${this.config.easing}`,
         });
         this.updateAfterDrag();
         this.clearDrag();
       }
     }
-  }
+  };
 
-  render(): JSX.Element {
+  render(): React.JSX.Element {
     return (
       <div
         ref={this.selector}
         style={{ overflow: 'hidden' }}
-        {...this.events.reduce((props, event) => Object.assign({}, props, { [event]: this[event] }), {})}
+        onTouchStart={this.onTouchStart}
+        onTouchEnd={this.onTouchEnd}
+        onTouchMove={this.onTouchMove}
+        onMouseDown={this.onMouseDown}
+        onMouseUp={this.onMouseUp}
+        onMouseLeave={this.onMouseLeave}
+        onMouseMove={this.onMouseMove}
       >
         <div ref={this.sliderFrame}>
-          {React.Children.map(this.props.children, (children, index) =>
-            React.cloneElement(children as React.ReactElement<any, string | React.JSXElementConstructor<any>>, {
-              key: index,
-              style: { float: 'left' },
-            }),
-          )}
+          {React.Children.map(this.props.children, (child, index) => {
+            if (!React.isValidElement<{ style?: React.CSSProperties }>(child)) {
+              return child;
+            }
+
+            return React.cloneElement(child, {
+              key: child.key ?? index,
+              style: {
+                ...child.props.style,
+                float: 'left',
+              },
+            });
+          })}
         </div>
       </div>
     );
