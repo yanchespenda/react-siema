@@ -15,7 +15,6 @@ ReactSiema is a lightweight carousel plugin for React. It's a wrapper based on d
 
 ```
 npm install @yanchespenda/react-siema --save
-yarn add @yanchespenda/react-siema
 ```
 
 ```
