@@ -20,6 +20,10 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - Refactored `ReactSiema` internals for stricter typing and safer DOM/style handling while preserving the public API.
 - Improved child slide style merging so existing child styles are preserved.
 - Reworked `debounce` utility with stronger typing and cleaner timeout handling.
+- Migrated project package management from Yarn to npm:
+  - replaced Yarn-based scripts/commands with npm equivalents
+  - added `package-lock.json` files for root and example
+  - removed Yarn lockfiles and Yarn config artifacts
 
 ### Documentation
 
