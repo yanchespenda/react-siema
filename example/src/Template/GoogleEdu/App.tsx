@@ -12,11 +12,18 @@ type SliderApi = {
 
 function App() {
   const [carouselCurrent, setCarouselCurrent] = React.useState(0)
+  const [progressRunId, setProgressRunId] = React.useState(0)
   const sliderRef = React.useRef<SliderApi | null>(null)
   const carouselBar = 10000
+
+  React.useEffect(() => {
+    setProgressRunId((prev) => prev + 1)
+  }, [carouselCurrent])
+
   const carouselOptions = React.useMemo(() => ({
     loop: true,
     duration: 800,
+    timer: carouselBar,
     easing: "ease-in-out",
     onNext: (currentSlide: number) => {
       setCarouselCurrent(currentSlide)
@@ -27,7 +34,7 @@ function App() {
     onGoTo: (currentSlide: number) => {
       setCarouselCurrent(currentSlide)
     }
-  }), [])
+  }), [carouselBar])
 
   const setSliderRef = React.useCallback((siema: SliderApi | null) => {
     sliderRef.current = siema
@@ -121,12 +128,30 @@ function App() {
                       <ul className={CarouselStyle.carouselNavigationBlockUl}>
                         {
                           data?.map((_item, idx: number) => {
-                            const currentTimer = { 'animationDuration': carouselBar + 'ms' }
+                            const isActive = carouselCurrent === idx
+                            const currentTimer: React.CSSProperties = isActive
+                              ? {
+                                  animationDuration: `${carouselBar}ms`,
+                                  WebkitAnimationDuration: `${carouselBar}ms`,
+                                }
+                              : {
+                                  animationDuration: '0ms',
+                                  WebkitAnimationDuration: '0ms',
+                                  transform: 'translateX(-100%)',
+                                  WebkitTransform: 'translateX(-100%)',
+                                }
                             return (
                               <li className={CarouselStyle.carouselNavigationBlockLi} key={ idx }>
                                 <button className={CarouselStyle.carouselNavigationBlockLiTrigger} onClick={() => sliderRef.current?.goTo(idx)}>
                                   <div className={CarouselStyle.carouselNavigationBlockLiTriggerWrap}>
-                                    <div className={[CarouselStyle.carouselNavigationBlockLiTriggerWrapBar, `${carouselCurrent === idx ? CarouselStyle.active : ''}`, 'bg-blue-700'].join(' ')} style={ currentTimer }></div>
+                                    <div
+                                      key={isActive ? `${idx}-${progressRunId}` : `${idx}-idle`}
+                                      className={[
+                                        CarouselStyle.carouselNavigationBlockLiTriggerWrapBar,
+                                        isActive ? CarouselStyle.carouselNavigationBlockLiTriggerWrapBarActive : '',
+                                      ].join(' ')}
+                                      style={ currentTimer }
+                                    ></div>
                                   </div>
                                 </button>
                               </li>

@@ -375,17 +375,17 @@
   transform: translateX(-100%);
   width: 100%;
   will-change: transform;
+}
 
-  &.active {
-    -webkit-animation-fill-mode: forwards;
-    animation-fill-mode: forwards;
-    -webkit-animation-name: slideLeft;
-    animation-name: slideLeft;
-    -webkit-animation-timing-function: linear;
-    animation-timing-function: linear;
-    -webkit-transform: translateX(0);
-    transform: translateX(0);
-  }
+.carouselNavigationBlockLiTriggerWrapBarActive {
+  -webkit-animation-fill-mode: forwards;
+  animation-fill-mode: forwards;
+  -webkit-animation-name: slideLeft;
+  animation-name: slideLeft;
+  -webkit-animation-timing-function: linear;
+  animation-timing-function: linear;
+  -webkit-transform: translateX(0);
+  transform: translateX(0);
 }
 
 

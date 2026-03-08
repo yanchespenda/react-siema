@@ -1,10 +1,16 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './Template/GoogleEdu/App';
 import reportWebVitals from './reportWebVitals';
 
-ReactDOM.render(
+const rootElement = document.getElementById('root');
+
+if (!rootElement) {
+  throw new Error('Root element not found');
+}
+
+createRoot(rootElement).render(
   <React.StrictMode>
     <React.Fragment>
       <div className="block-info">
@@ -13,8 +19,7 @@ ReactDOM.render(
       </div>
       <App />
     </React.Fragment>
-  </React.StrictMode>,
-  document.getElementById('root')
+  </React.StrictMode>
 );
 
 // If you want to start measuring performance in your app, pass a function

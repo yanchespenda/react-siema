@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.2.2] - 2026-03-08
+
+### Fixed
+
+- Restored progress indicator behavior in the example carousel, including active bar visibility and slide-duration animation handling.
+- Improved progress animation restart logic when the active slide changes (including manual dot click navigation).
+- Reset autoplay interval after manual navigation (`prev`, `next`, `goTo`) so slide timing starts fresh and does not jump early.
+
 ## [1.2.1] - 2026-03-08
 
 ### Fixed

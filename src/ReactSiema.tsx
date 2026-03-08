@@ -171,7 +171,27 @@ class ReactSiema extends Component<IProps> {
   }
 
   runTimer(): void {
-    this.next();
+    this.next(true);
+  }
+
+  clearTimer(): void {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  }
+
+  startTimer(): void {
+    if (this.config.disabledTimer) {
+      return;
+    }
+
+    this.timer = setInterval(() => this.runTimer(), this.config.timer);
+  }
+
+  resetTimer(): void {
+    this.clearTimer();
+    this.startTimer();
   }
 
   componentDidUpdate(prevProps: IProps): void {
@@ -179,13 +199,13 @@ class ReactSiema extends Component<IProps> {
       return;
     }
 
-    if (this.timer) clearInterval(this.timer);
+    this.clearTimer();
     this.init();
   }
 
   componentWillUnmount(): void {
     window.removeEventListener('resize', this.onResize);
-    if (this.timer) clearInterval(this.timer);
+    this.clearTimer();
   }
 
   init(): void {
@@ -214,9 +234,7 @@ class ReactSiema extends Component<IProps> {
 
     this.slideToCurrent();
 
-    if (!this.config.disabledTimer) {
-      this.timer = setInterval(() => this.runTimer(), this.config.timer);
-    }
+    this.startTimer();
   }
 
   checkNavigation(): void {
@@ -306,11 +324,12 @@ class ReactSiema extends Component<IProps> {
       this.currentSlide = Math.max(this.currentSlide - 1, 0);
     }
     this.slideToCurrent();
+    this.resetTimer();
 
     if (this.config.onPrev) this.config.onPrev(this.currentSlide);
   }
 
-  next(): void {
+  next(triggeredByTimer = false): void {
     const maxSlide = Math.max(this.innerElements.length - this.perPage, 0);
 
     if (this.currentSlide === maxSlide && this.config.loop) {
@@ -319,6 +338,9 @@ class ReactSiema extends Component<IProps> {
       this.currentSlide = Math.min(this.currentSlide + 1, maxSlide);
     }
     this.slideToCurrent();
+    if (!triggeredByTimer) {
+      this.resetTimer();
+    }
 
     if (this.config.onNext) this.config.onNext(this.currentSlide);
   }
@@ -328,6 +350,7 @@ class ReactSiema extends Component<IProps> {
 
     this.currentSlide = Math.min(Math.max(index, 0), maxSlide);
     this.slideToCurrent();
+    this.resetTimer();
 
     if (this.config.onGoTo) this.config.onGoTo(this.currentSlide);
   }
