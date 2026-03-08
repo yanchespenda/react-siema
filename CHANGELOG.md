@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.2.1] - 2026-03-08
+
+### Fixed
+
+- Fixed a regression where carousel progress behavior could break after recent updates.
+- Updated `ReactSiema` update lifecycle to re-initialize only when relevant config actually changes, preventing unnecessary timer resets.
+- Stabilized example integration for newer React behavior by replacing state-based slider ref handling with `useRef` and memoized options.
+
 ## [1.2.0] - 2026-03-01
 
 ### Changed

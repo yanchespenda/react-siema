@@ -87,13 +87,66 @@ class ReactSiema extends Component<IProps> {
     super(props);
   }
 
-  get config(): ConfigProps {
-    const props = this.props as Partial<Omit<ConfigProps, 'selector'>>;
+  getConfigFromProps(props: IProps): ConfigProps {
+    const configProps = props as Partial<Omit<ConfigProps, 'selector'>>;
     return {
       ...DEFAULT_CONFIG,
-      ...props,
+      ...configProps,
       selector: this.selector,
     };
+  }
+
+  get config(): ConfigProps {
+    return this.getConfigFromProps(this.props);
+  }
+
+  hasPerPageChanged(prevPerPage: number | PerPage, nextPerPage: number | PerPage): boolean {
+    if (typeof prevPerPage === 'number' && typeof nextPerPage === 'number') {
+      return prevPerPage !== nextPerPage;
+    }
+
+    if (typeof prevPerPage === 'number' || typeof nextPerPage === 'number') {
+      return true;
+    }
+
+    const prevEntries = Object.entries(prevPerPage).sort(([a], [b]) => Number(a) - Number(b));
+    const nextEntries = Object.entries(nextPerPage).sort(([a], [b]) => Number(a) - Number(b));
+
+    if (prevEntries.length !== nextEntries.length) {
+      return true;
+    }
+
+    for (let i = 0; i < prevEntries.length; i++) {
+      if (prevEntries[i][0] !== nextEntries[i][0] || prevEntries[i][1] !== nextEntries[i][1]) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  shouldReinitialize(prevProps: IProps): boolean {
+    if (React.Children.count(prevProps.children) !== React.Children.count(this.props.children)) {
+      return true;
+    }
+
+    const prevConfig = this.getConfigFromProps(prevProps);
+    const nextConfig = this.config;
+
+    return (
+      prevConfig.resizeDebounce !== nextConfig.resizeDebounce ||
+      prevConfig.duration !== nextConfig.duration ||
+      prevConfig.easing !== nextConfig.easing ||
+      this.hasPerPageChanged(prevConfig.perPage, nextConfig.perPage) ||
+      prevConfig.startIndex !== nextConfig.startIndex ||
+      prevConfig.draggable !== nextConfig.draggable ||
+      prevConfig.threshold !== nextConfig.threshold ||
+      prevConfig.loop !== nextConfig.loop ||
+      prevConfig.timer !== nextConfig.timer ||
+      prevConfig.disabledTimer !== nextConfig.disabledTimer ||
+      prevConfig.useFixedWidth !== nextConfig.useFixedWidth ||
+      prevConfig.fixedWidth !== nextConfig.fixedWidth
+    );
   }
 
   componentDidMount(): void {
@@ -121,7 +174,11 @@ class ReactSiema extends Component<IProps> {
     this.next();
   }
 
-  componentDidUpdate(): void {
+  componentDidUpdate(prevProps: IProps): void {
+    if (!this.shouldReinitialize(prevProps)) {
+      return;
+    }
+
     if (this.timer) clearInterval(this.timer);
     this.init();
   }

@@ -4,14 +4,21 @@ import CarouselStyle from './App.module.scss'
 import ReactSiema from '@yanchespenda/react-siema'
 import { CarouselItem, CarouselLinkData } from './App.interface'
 
+type SliderApi = {
+  prev: () => void
+  next: () => void
+  goTo: (index: number) => void
+}
+
 function App() {
   const [carouselCurrent, setCarouselCurrent] = React.useState(0)
+  const sliderRef = React.useRef<SliderApi | null>(null)
   const carouselBar = 10000
-  const carouselOptions = {
+  const carouselOptions = React.useMemo(() => ({
     loop: true,
     duration: 800,
     easing: "ease-in-out",
-    onNext: (currentSlide: number) => { 
+    onNext: (currentSlide: number) => {
       setCarouselCurrent(currentSlide)
     },
     onPrev: (currentSlide: number) => {
@@ -20,12 +27,11 @@ function App() {
     onGoTo: (currentSlide: number) => {
       setCarouselCurrent(currentSlide)
     }
-  }
-  const [slider, setSlider] = React.useState({
-    prev: () => {},
-    next: () => {},
-    goTo: (_index: number) => {}
-  })
+  }), [])
+
+  const setSliderRef = React.useCallback((siema: SliderApi | null) => {
+    sliderRef.current = siema
+  }, [])
 
   const data: CarouselItem[] = [{"carousel_title":"Corousel 2","carousel_desc_data":{"enable":true,"desc":"0W0"},"carousel_link_data":{"enable":true,"target":"_self","link":"https://web.facebook.com","text":"Test"},"carousel_image":{"enable":true,"file_exits":false,"img":"https://myponyasia.s3.us-west-1.wasabisys.com/assets/images/carousel/720/2021/08/9764e8df-c43b-4128-95ca-3eaac26f36eb.webp"}},{"carousel_title":"Testing","carousel_desc_data":{"enable":true,"desc":"Lorem ipsum, dolor sit amet consectetur adipisicing elit. Dolores, enim? Assumenda, omnis beatae architecto at delectus facilis? Perspiciatis, in perferendis."},"carousel_link_data":{"enable":true,"target":"_self","link":"https://www.youtube.com/","text":"https://web.facebook.com/"},"carousel_image":{"enable":true,"file_exits":false,"img":"https://myponyasia.s3.us-west-1.wasabisys.com/assets/images/carousel/720/2021/07/1527820a-2a16-4a1b-9287-69a39d0efde4.webp"}}]
 
@@ -60,7 +66,7 @@ function App() {
             <div className={CarouselStyle.carouselPreContainer}>
                 <div className={CarouselStyle.carouselContainer}>
                   <div className={CarouselStyle.carouselItems}>
-                    <ReactSiema ref={(siema: any) => setSlider(siema)} {...carouselOptions}>
+                    <ReactSiema ref={setSliderRef as any} {...carouselOptions}>
                       {
                         data?.map((item, idx: number) => {
                           return (
@@ -98,14 +104,14 @@ function App() {
                   </div>
                   <div className={CarouselStyle.carouselNavigation}>
                     <div className={[CarouselStyle.carouselNavigationBtn, CarouselStyle.prev].join(' ')}>
-                      <button className={CarouselStyle.carouselNavigationBtnTrigger} onClick={() => slider.prev()}>
+                      <button className={CarouselStyle.carouselNavigationBtnTrigger} onClick={() => sliderRef.current?.prev()}>
                         <div className={CarouselStyle.carouselNavigationBtnTriggerWrap}>
                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className={CarouselStyle.SVGprev}><path d="M9.546 6.5l5.443 5.532L9.5 17.5"></path></svg>
                         </div>
                       </button>
                     </div>
                     <div className={[CarouselStyle.carouselNavigationBtn, CarouselStyle.next].join(' ')}>
-                      <button className={CarouselStyle.carouselNavigationBtnTrigger} onClick={() => slider.next()}>
+                      <button className={CarouselStyle.carouselNavigationBtnTrigger} onClick={() => sliderRef.current?.next()}>
                         <div className={CarouselStyle.carouselNavigationBtnTriggerWrap}>
                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className={CarouselStyle.SVGnext}><path d="M9.546 6.5l5.443 5.532L9.5 17.5"></path></svg>
                         </div>
@@ -118,7 +124,7 @@ function App() {
                             const currentTimer = { 'animationDuration': carouselBar + 'ms' }
                             return (
                               <li className={CarouselStyle.carouselNavigationBlockLi} key={ idx }>
-                                <button className={CarouselStyle.carouselNavigationBlockLiTrigger} onClick={() => slider.goTo(idx)}>
+                                <button className={CarouselStyle.carouselNavigationBlockLiTrigger} onClick={() => sliderRef.current?.goTo(idx)}>
                                   <div className={CarouselStyle.carouselNavigationBlockLiTriggerWrap}>
                                     <div className={[CarouselStyle.carouselNavigationBlockLiTriggerWrapBar, `${carouselCurrent === idx ? CarouselStyle.active : ''}`, 'bg-blue-700'].join(' ')} style={ currentTimer }></div>
                                   </div>
